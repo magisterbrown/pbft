@@ -2,6 +2,8 @@ import socket
 import random 
 import struct
 import os
+import signal
+import time
 
 from msg import ClientRequest, ClientResponse, type_ids 
 from config import NODES, F
@@ -31,6 +33,6 @@ if __name__ == "__main__":
         connection.recv_into(resp)
         connection.close()
         responses[resp.req.uuid].append(resp.res)
-    print(responses[resp.req.uuid])
 
+    print(responses)
 

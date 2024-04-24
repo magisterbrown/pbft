@@ -1,6 +1,7 @@
 import socket
 import ctypes
 import struct
+import time
 
 from msg import type_ids, id_to_type, ClientRequest, PrePrepare, PreSend, Prepare, Commit, ClientResponse
 from config import NODES, F
@@ -28,15 +29,32 @@ def run(idx: int, network: str):
 
     pending_msg=list()
     out_of_context=list() # Future consensus to be executed
+
+    waiting_id = None
+    waiting_starter = 0
     try:
         while True:
-            connection, client_address = server.accept()
+            try:
+                if waiting_id is not None:
+                    passed = time.time()-waiting_starter
+                    if passed > 1:
+                        raise TimeoutError("Brok")
+                    server.settimeout(1-passed)
+
+                connection, client_address = server.accept()
+                server.settimeout(None)
+            except socket.timeout:
+                raise Exception("Reconfigure")
+
 
             typer = id_to_type[int.from_bytes(connection.recv(4))]
             req = typer()
             connection.recv_into(req)
             match req:
                 case ClientRequest():
+                    #Reconfigure fault
+                    if idx==0 and seqn>3:
+                        continue
                     if view%NODES == idx:
                         prepre = PrePrepare(view=view, seq=seqn)
                         seqn+=1
@@ -53,10 +71,13 @@ def run(idx: int, network: str):
                                 sende(i, msg)
                     else:
                         sende(view%NODES, req)
-                               
+                        waiting_id = req.uuid
+                        waiting_starter = time.time()
 
                 case PreSend():
                     prep = req.pre
+                    if req.req.uuid == waiting_id:
+                        waiting_id = None
                     new_prep = all([x.pre != prep for x in presend_hist])
                     #TODO: check seq between h and H
                     if req.pre.view == view and new_prep:
