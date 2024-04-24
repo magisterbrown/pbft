@@ -6,7 +6,7 @@ import os
 from msg import ClientRequest, ClientResponse, type_ids 
 from config import NODES, F
 
-view=0
+view=1
 if __name__ == "__main__":
     responses = dict()
     req = ClientRequest(uuid=random.randint(0, 10000), op=b"B")

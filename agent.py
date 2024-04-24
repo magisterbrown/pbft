@@ -37,7 +37,7 @@ def run(idx: int, network: str):
             connection.recv_into(req)
             match req:
                 case ClientRequest():
-                    if view%NODES == 0:
+                    if view%NODES == idx:
                         prepre = PrePrepare(view=view, seq=seqn)
                         seqn+=1
 
@@ -51,6 +51,8 @@ def run(idx: int, network: str):
                             if i != idx:
                                 sende(i, pre_send)
                                 sende(i, msg)
+                    else:
+                        sende(view%NODES, req)
                                
 
                 case PreSend():
